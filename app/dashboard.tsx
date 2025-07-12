@@ -131,7 +131,7 @@ export default function Dashboard() {
     setEditingTaskId(null);
     setModalVisible(false);
   };
-  
+
   const todayTasks = tasks
   .filter(task => {
     const isTodayTime =
@@ -229,6 +229,12 @@ export default function Dashboard() {
                 onPress={() => setModalVisible(true)}
               >
                 <Text style={styles.addButtonText}>+ Add New Task</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => router.push('/profile')}
+              >
+                <Text style={styles.addButtonText}>Profile</Text>
               </TouchableOpacity>
             </View>
           </>
