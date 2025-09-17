@@ -50,17 +50,62 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch('http://localhost:3000/api/profile');
+const fetchUser = async () => {
+  try {
+    const res = await fetch('http://192.168.0.X:3000/api/profile');
+    if (res.status === 404) {
+      // user neexistuje → vytvoř
+      const createRes = await fetch('http://192.168.0.X:3000/api/profile', {
+        method: 'POST',
+      });
+      const newUser = await createRes.json();
+      setUserData({
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          avatarIndex: newUser.avatarIndex ?? 0,
+        },
+        xp: newUser.xp,
+        level: newUser.level,
+        hydrationProgress: newUser.hydrationProgress,
+        medicationProgress: newUser.medicationProgress,
+        achievements: newUser.achievements,
+        cards: newUser.cards,
+      });
+    } else {
+      const data = await res.json();
+      setUserData({
+        user: {
+          id: data.id,
+          name: data.name,
+          avatarIndex: data.avatarIndex ?? 0,
+        },
+        xp: data.xp,
+        level: data.level,
+        hydrationProgress: data.hydrationProgress,
+        medicationProgress: data.medicationProgress,
+        achievements: data.achievements,
+        cards: data.cards,
+      });
+    }
+  } catch (error) {
+    console.warn('❌ Failed to fetch or create user:', error);
+  }
+};
+
+useEffect(() => {
+  const initializeUser = async () => {
+    try {
+      // 1. POKUS O FETCH EXISTUJÍCÍHO UŽIVATELE
+      const res = await fetch('http://localhost:3000/api/profile/guest');
+      if (res.ok) {
         const data = await res.json();
         setUserData({
           user: {
             id: data.id,
             name: data.name,
-            avatarIndex: data.avatarIndex ?? 0,          
-            },
+            avatarIndex: data.avatarIndex ?? 0,
+          },
           xp: data.xp,
           level: data.level,
           hydrationProgress: data.hydrationProgress,
@@ -68,13 +113,40 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           achievements: data.achievements,
           cards: data.cards,
         });
-      } catch (error) {
-        console.warn('❌ Failed to fetch user profile:', error);
+        return;
       }
-    };
 
-    fetchUser();
-  }, []);
+      // 2. VYTVOŘ NOVÉHO UŽIVATELE
+      const avatarIndex = getRandomAvatar();
+      const createRes = await fetch('http://localhost:3000/api/profile/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Guest', avatarIndex }),
+      });
+
+      if (!createRes.ok) throw new Error('User creation failed');
+
+      const created = await createRes.json();
+      setUserData({
+        user: {
+          id: created.id,
+          name: created.name,
+          avatarIndex: created.avatarIndex,
+        },
+        xp: created.xp,
+        level: created.level,
+        hydrationProgress: created.hydrationProgress,
+        medicationProgress: created.medicationProgress,
+        achievements: created.achievements,
+        cards: created.cards,
+      });
+    } catch (error) {
+      console.warn('❌ Failed to initialize user:', error);
+    }
+  };
+
+  initializeUser();
+}, []);
 
   return (
     <UserContext.Provider value={{ ...userData, setUser, setUserData }}>

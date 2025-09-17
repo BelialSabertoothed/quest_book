@@ -5,29 +5,27 @@ import { UserContext } from '../../context/UserContext';
 import { useRouter } from 'expo-router';
 
 export default function EditAvatarScreen() {
-  const { setUser } = useContext(UserContext);
+const { user, setUser } = useContext(UserContext);
   const router = useRouter();
 
-  const handleSelect = async (avatarIndex: number) => {
-    try {
-      // Backend update
-      await fetch('http://localhost:3000/api/profile/avatar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ avatarIndex }),
-      });
+const handleSelect = async (avatarIndex: number) => {
+  try {
+    await fetch('http://localhost:3000/api/profile/avatar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: user.id, avatarIndex }),
+    });
 
-      // Lokální update contextu
-      setUser(prev => ({
-        ...prev,
-        avatarIndex,
-      }));
+    setUser(prev => ({
+      ...prev,
+      avatarIndex,
+    }));
 
-      router.back();
-    } catch (err) {
-      console.error('❌ Failed to update avatar:', err);
-    }
-  };
+    router.back();
+  } catch (err) {
+    console.error('❌ Failed to update avatar:', err);
+  }
+};
 
   return (
     <View style={styles.container}>
