@@ -1,5 +1,5 @@
-import express, { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import express, { Request, Response, Router } from 'express';
 
 const router: Router = express.Router();
 const prisma = new PrismaClient();
@@ -69,8 +69,8 @@ router.post('/profile/create', async (req: Request, res: Response) => {
         level: 1,
         hydrationProgress: 0,
         medicationProgress: 0,
-        achievements: [],
-        cards: [],
+        achievements: undefined,
+        cards: undefined,
       },
     });
 

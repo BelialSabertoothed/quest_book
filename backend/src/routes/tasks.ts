@@ -1,5 +1,5 @@
-import express, { RequestHandler } from 'express';
 import { PrismaClient } from '@prisma/client';
+import express, { RequestHandler } from 'express';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -38,9 +38,9 @@ const createTask: RequestHandler<{}, any, CreateTaskBody> = async (req, res) => 
       data: {
         title,
         userId,
-        time: time ? new Date(time) : undefined,
+        dueTime: time ? new Date(time) : undefined,
         repeatDays,
-        completed: false,
+        completedAt: null,
       },
     });
 
@@ -64,25 +64,28 @@ const toggleComplete: RequestHandler<ToggleTaskParams> = async (req, res) => {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const wasCompleted = task.completed;
+    const wasCompleted = task.completedAt !== null;
     const isRepeat = task.repeatDays && task.repeatDays.length > 0;
-    const alreadyCompletedToday = task.lastCompletedAt?.toString().startsWith(today);
+    const completedDate = task.completedAt?.toISOString().split('T')[0];
+    const alreadyCompletedToday = completedDate === today;
+
+    const shouldUncomplete = wasCompleted && isRepeat && alreadyCompletedToday;
 
     const updatedTask = await prisma.task.update({
       where: { id },
       data: {
-        completed: !wasCompleted,
-        lastCompletedAt: !wasCompleted ? new Date().toISOString() : task.lastCompletedAt,
-        },
+        completedAt: shouldUncomplete ? null : new Date(),
+      },
     });
-     const shouldAddXp = !task.completed || (isRepeat && !alreadyCompletedToday);
 
-        if (shouldAddXp) {
-            await prisma.user.update({
-            where: { id: task.userId },
-            data: { xp: { increment: 10 } },
-            });
-        }
+    const shouldAddXp = !wasCompleted || (isRepeat && !alreadyCompletedToday);
+
+    if (shouldAddXp) {
+      await prisma.user.update({
+        where: { id: task.userId },
+        data: { xp: { increment: 10 } },
+      });
+    }
 
     res.status(200).json(updatedTask);
   } catch (err) {
